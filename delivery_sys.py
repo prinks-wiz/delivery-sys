@@ -1,48 +1,94 @@
 import collections.abc
-#hyper needs the four following aliases to be done manually.
 collections.Iterable = collections.abc.Iterable
 collections.Mapping = collections.abc.Mapping
 collections.MutableSet = collections.abc.MutableSet
 collections.MutableMapping = collections.abc.MutableMapping
-import toml
 import streamlit as st
+from StackQueue import Stacks,ArrayQueue
 from gsheetsdb import connect
-
-# Create a connection object.
-conn = connect()
-
-# Perform SQL query on the Google Sheet.
-# Uses st.cache to only rerun when the query changes or after 10 min.
-@st.cache(ttl=600)
-def run_query(query):
-    rows = conn.execute(query, headers=1)
-    rows = rows.fetchall()
-    return rows
-
-sheet_url = st.secrets["public_gsheets_url"]
-rows = run_query(f'SELECT * FROM "{sheet_url}"')
-
-# Print results.
-for row in rows:
-    st.write(f"{row.name} has a :{row.pet}:")
+from datetime import datetime
+from gspread_pandas import Spread,Client
+from google.oauth2 import service_account
+import json
+import pandas as pd
+from pandas import DataFrame
+import User_inputs
 
 
+scope = ['https://spreadsheets.google.com/feeds',
+         'https://www.googleapis.com/auth/drive']
+service_account_info = json.load(open('service_account.json'))
+credentials = service_account.Credentials.from_service_account_info(service_account_info, scopes = scope)
+client = Client(scope=scope,creds=credentials)
+spreadsheetname = "Inventory_data_pub"
+spread = Spread(spreadsheetname,client = client)
+
+sh = client.open(spreadsheetname)
+worksheet_list = sh.worksheets()
+
+# Functions 
+@st.cache()
+# Get our worksheet names
+def worksheet_names():
+    sheet_names = []   
+    for sheet in worksheet_list:
+        sheet_names.append(sheet.title)  
+    return sheet_names
+
+# Get the sheet as dataframe
+def load_the_spreadsheet(spreadsheetname):
+    worksheet = sh.worksheet(spreadsheetname)
+    df = DataFrame(worksheet.get_all_records())
+    return df
+
+
+def update_the_spreadsheet(spreadsheetname,dataframe):
+    col = ['Name','phone number','address','email','cart','Time_stamp']
+    spread.df_to_sheet(dataframe[col],sheet = spreadsheetname,index = False)
+    st.sidebar.info('Request accepted')
+
+
+what_sheets = worksheet_names()
 
 f1 = open('Data.txt','r')
 elements = eval(f1.read())
-
-
 st.header("Vinayaga Supermarket")
 
-st.title("Welcome to Vinayaga Supermarket")
+
 #st.subheader("address and phone number")
 
-sidebar = st.sidebar.radio('Navigation',['Home','My Cart','Billing','Checkout'])
+sidebar = st.sidebar.radio('Navigation',['Home page','Shop now','My Cart','Billing'])
 confirm = False
-if sidebar == 'Home':
-    st.title("Supermarket")
-    col1,col2, col3=st.columns(3)
+if sidebar == 'Home page':
+    st.title("Contact Information")
+    name = st.text_input('Enter your name')
+    ph_number = st.text_input('enter phone number')
+    email = st.text_input('Enter email address')
+    address = st.text_area("Delivery address")
 
+    customer = User_inputs.User_inputs(name,ph_number,email,address)
+    Continue = st.button("Continue")
+    if Continue:
+        if customer.check_phone() is False and ph_number is not " ":
+            st.write("enter valid phone number")
+        elif not customer.check_email():
+            st.write("enter valid email address")
+
+        else:
+            now = datetime.now()
+            user = {'Name' : [customer.name], 'phone number':[customer.phone_number],'address':[customer.address],'email':[customer.email],'cart':["empty"],"Time_stamp":[now]}
+            opt_df = DataFrame(user)
+            df = load_the_spreadsheet('CartList')
+            new_df = df.append(opt_df,ignore_index=True)
+            update_the_spreadsheet('CartList',new_df)
+            st.write("Thank you. Please proceed to shopping")
+
+
+if sidebar == 'Shop now':
+   
+    st.title("Welcome to inventory")
+    col1,col2, col3=st.columns(3)
+    
 
     with col1:
         st.subheader("Fruits")
@@ -134,18 +180,12 @@ if sidebar == 'Home':
             st.session_state[j] = j
 
     
-
-
-
     if st.button('Confrim order'):
         if 'cart_done' not in st.session_state:
             st.session_state['cart_done'] = True
 
      
-        
-
-if sidebar =='My Cart' and st.session_state['cart_done']:
-
+if sidebar =='My Cart':
     st.title("Your Cart")
     col1,col2, col3=st.columns(3)
 
@@ -175,30 +215,35 @@ if sidebar =='My Cart' and st.session_state['cart_done']:
     
     with col3:
         st.header("Quantity")
-        quant = []
+        #use of stacks to maintain order in cart
+        quant = Stacks()
+        cart = {}
         for i in st.session_state:
-            quant.append(st.number_input("",min_value=0, max_value=15,key=i))
+            quant.push(st.number_input("",min_value=0, max_value=15,key=i))
             del st.session_state[i]
             if i not in st.session_state:
-                st.session_state[i]={i:quant.pop()}
+                amount = quant.pop()
+                st.session_state[i]={i:amount}
+                cart[i]=amount
 
         st.write("")
         st.write("")
         st.write("")
         st.write("")    
-    
+        
     if st.button("Checkout"):
-        if 'checkout' in st.session_state:
+
+        df = load_the_spreadsheet('CartList')
+        cart_info = df.iloc[-1]
+        df.drop(df.tail(1).index,inplace = True)
+        cart_info['cart']=cart
+        new_df = df.append(cart_info,ignore_index=True)
+        update_the_spreadsheet('CartList',new_df)
+        st.write("Order placed")
+        st.write("Thank you for shopping!")
+        if 'checkout' not in st.session_state:
             st.session_state['checkout'] = True
 
-
-
-elif sidebar == 'My Cart':
-    st.write("Please fill in a cart")
-    st.write("Refresh the page")
-
-else:
-    pass
 
 if sidebar == 'Billing':
     col1,col2 = st.columns(2)
@@ -230,14 +275,6 @@ if sidebar == 'Billing':
             st.write("")
             st.write(bill+(18*bill/100)+(5*bill/100))
     if st.button("Proceed"):
-        if 'Proceed' in st.session_state:
-            st.session_state['Proceed'] = True
-    
-
-
-
-                    
-
-
-
-
+        st.write("Payment on delivery")
+        st.write("Thank you")
+        
