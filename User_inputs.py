@@ -1,3 +1,5 @@
+
+
 class User_inputs:
     size=0
   
@@ -8,14 +10,16 @@ class User_inputs:
         self.email = email
 
     def check_phone(self):
-        if len(str(self.phone_number))!=10 and type(self.phone_number)!= int:
+        if len(self.phone_number)!=10:
             return False  
 
     def check_email(self):
-        a=self.email[-1:-11:-1]
-        b=a[::-1]
-        if b!="@gmail.com":
-            return False   
+        a=self.email
+        if "@" not in a:
+            return False
+        else:
+            return True
+
 
     def display(self):  
         print('Hello',self.name)
