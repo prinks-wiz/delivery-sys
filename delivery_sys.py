@@ -55,7 +55,7 @@ elements = eval(f1.read())
 st.header("Vinayaga Supermarket")
 
 
-#st.subheader("address and phone number")
+
 
 sidebar = st.sidebar.radio('Navigation',['Home page','Shop now','My Cart','Billing'])
 confirm = False
@@ -171,6 +171,7 @@ if sidebar == 'Shop now':
     st.write("")
     st.write("")
     st.write("")
+    st.write("Only orders above 1000 will be accepted")
     options = st.multiselect(
         'Choose your products please',
         [i for i in elements]
@@ -180,7 +181,7 @@ if sidebar == 'Shop now':
             st.session_state[j] = j
 
     
-    if st.button('Confrim order'):
+    if st.button('Confirm order'):
         if 'cart_done' not in st.session_state:
             st.session_state['cart_done'] = True
 
@@ -219,7 +220,7 @@ if sidebar =='My Cart':
         quant = Stacks()
         cart = {}
         for i in st.session_state:
-            quant.push(st.number_input("",min_value=0, max_value=15,key=i))
+            quant.push(st.number_input("",min_value=1, max_value=15,key=i))
             del st.session_state[i]
             if i not in st.session_state:
                 amount = quant.pop()
@@ -230,7 +231,7 @@ if sidebar =='My Cart':
         st.write("")
         st.write("")
         st.write("")    
-        
+    st.write("Only orders above 1000 will be accepted")
     if st.button("Checkout"):
 
         df = load_the_spreadsheet('CartList')
