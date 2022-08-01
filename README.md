@@ -14,7 +14,7 @@ Python
 
 Streamlit
 
-##Python Version 
+## Version 
 python - 3.10.5
 Streamlit - 1.10.0
 
