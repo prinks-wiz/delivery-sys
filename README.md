@@ -15,7 +15,9 @@ Python
 Streamlit
 
 ## Version 
+
 python - 3.10.5
+
 Streamlit - 1.10.0
 
 Earlier versions of python upto python 3.9 are compatible with existing version of streamlit
