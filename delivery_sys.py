@@ -1,20 +1,28 @@
+#Below imports are for python version 3.10
+
 import collections.abc
 collections.Iterable = collections.abc.Iterable
 collections.Mapping = collections.abc.Mapping
 collections.MutableSet = collections.abc.MutableSet
 collections.MutableMapping = collections.abc.MutableMapping
-import streamlit as st
-from StackQueue import Stacks,ArrayQueue
-from gsheetsdb import connect
-from datetime import datetime
-from gspread_pandas import Spread,Client
-from google.oauth2 import service_account
+
+#if python version us 3.9, above imports can be omitted
+#Refer to redacted abstract classes from python docs
+#for the 3.9 and 3.10 versions
 import json
+import User_inputs
+import streamlit as st
 import pandas as pd
 from pandas import DataFrame
-import User_inputs
+from datetime import datetime
+from gsheetsdb import connect
+from StackQueue import Stacks,ArrayQueue
+from gspread_pandas import Spread,Client
+from google.oauth2 import service_account
 
 
+
+#Code for accessing the hosting platforms and API keys
 scope = ['https://spreadsheets.google.com/feeds',
          'https://www.googleapis.com/auth/drive']
 service_account_info = json.load(open('service_account.json'))
@@ -55,7 +63,7 @@ elements = eval(f1.read())
 st.header("Vinayaga Supermarket")
 
 
-
+#Code for building webpages of web application
 
 sidebar = st.sidebar.radio('Navigation',['Home page','Shop now','My Cart','Billing'])
 confirm = False
@@ -213,7 +221,7 @@ if sidebar =='My Cart':
                 st.write("")
                 st.write("")
 
-    
+#STACK IMPLEMETATION TO MAINTAIN ORDER OF CART    
     with col3:
         st.header("Quantity")
         #use of stacks to maintain order in cart
