@@ -66,7 +66,7 @@ order_complete = st.button("Order delivered")
 if order_complete:
     order_queue.dequeue()
     df.drop([0],axis=0,inplace = True)
-    update_the_spreadsheet('CartList',df)
+    update_the_spreadsheet('CartList',df[:-1])
 
 st.write(" ")
 st.subheader("Pending orders")
