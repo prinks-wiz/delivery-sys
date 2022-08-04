@@ -55,6 +55,7 @@ st.header("Vinayaga Supermarket")
 st.title("Received orders")
 
 df = load_the_spreadsheet('CartList')
+df.drop_duplicates(keep=False,inplace=True)
 order_queue = ArrayQueue()
 #Using a queue to enter the existing orders
 for i in range(0,df.shape[0]):
